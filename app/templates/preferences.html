@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Мои предпочтения - VideoAnalyzer{% endblock %}
+
+{% block content %}
+<div class="preferences-container">
+    <div class="preferences-card">
+        <h2>Мои предпочтения</h2>
+        
+        <form id="preferencesForm" class="preferences-form">
+            <div class="form-section">
+                <h3>Категории контента</h3>
+                <div class="form-group">
+                    <label for="preferred_categories">Предпочтительные категории (через запятую):</label>
+                    <input type="text" id="preferred_categories" name="preferred_categories" 
+                           placeholder="образование, технологии, наука, развлечения">
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Длительность видео</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="min_duration_minutes">Минимальная длительность (минуты):</label>
+                        <input type="number" id="min_duration_minutes" name="min_duration_minutes" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_duration_minutes">Максимальная длительность (минуты):</label>
+                        <input type="number" id="max_duration_minutes" name="max_duration_minutes" value="120" min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Язык и контент</h3>
+                <div class="form-group">
+                    <label for="preferred_languages">Предпочтительные языки (через запятую):</label>
+                    <input type="text" id="preferred_languages" name="preferred_languages" 
+                           placeholder="ru, en">
+                </div>
+                
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="exclude_explicit_content" name="exclude_explicit_content">
+                        Исключать явный контент
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Тип контента</h3>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="educational_preference" name="educational_preference">
+                        Образовательный контент
+                    </label>
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="entertainment_preference" name="entertainment_preference" checked>
+                        Развлекательный контент
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full">Сохранить предпочтения</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+    </div>
+</div>
+
+<script>
+async function loadPreferences() {
+    try {
+        const response = await fetch('/users/{{ user_id }}/preferences');
+        if (response.ok) {
+            const preferences = await response.json();
+            if (preferences.preferred_categories) {
+                document.getElementById('preferred_categories').value = preferences.preferred_categories.join(', ');
+            }
+            if (preferences.preferred_languages) {
+                document.getElementById('preferred_languages').value = preferences.preferred_languages.join(', ');
+            }
+            document.getElementById('min_duration_minutes').value = preferences.min_duration_minutes;
+            document.getElementById('max_duration_minutes').value = preferences.max_duration_minutes;
+            document.getElementById('exclude_explicit_content').checked = preferences.exclude_explicit_content;
+            document.getElementById('educational_preference').checked = preferences.educational_preference;
+            document.getElementById('entertainment_preference').checked = preferences.entertainment_preference;
+        }
+    } catch (error) {
+        console.error('Error loading preferences:', error);
+    }
+}
+
+document.getElementById('preferencesForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        preferred_categories: formData.get('preferred_categories') ? 
+            formData.get('preferred_categories').split(',').map(s => s.trim()).filter(s => s) : [],
+        preferred_languages: formData.get('preferred_languages') ? 
+            formData.get('preferred_languages').split(',').map(s => s.trim()).filter(s => s) : [],
+        min_duration_minutes: parseInt(formData.get('min_duration_minutes')),
+        max_duration_minutes: parseInt(formData.get('max_duration_minutes')),
+        exclude_explicit_content: formData.get('exclude_explicit_content') === 'on',
+        educational_preference: formData.get('educational_preference') === 'on',
+        entertainment_preference: formData.get('entertainment_preference') === 'on'
+    };
+    
+    try {
+        const response = await fetch('/users/{{ user_id }}/preferences', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('message').innerHTML = 
+                '<div class="success">Предпочтения успешно сохранены!</div>';
+        } else {
+            document.getElementById('message').innerHTML = 
+                '<div class="error">Ошибка: ' + result.detail + '</div>';
+        }
+    } catch (error) {
+        document.getElementById('message').innerHTML = 
+            '<div class="error">Ошибка сети: ' + error + '</div>';
+    }
+});
+
+loadPreferences();
+</script>
+{% endblock %}

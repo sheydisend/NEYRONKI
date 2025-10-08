@@ -15,12 +15,16 @@ class UserCreate(UserBase):
             raise ValueError('Password must be at least 6 characters long')
         return v
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 class UserResponse(UserBase):
     id: int
     created_at: datetime
     
     class Config:
-        from_attributes = True  # Изменено с orm_mode
+        from_attributes = True
 
 class PreferencesBase(BaseModel):
     preferred_categories: Optional[List[str]] = None

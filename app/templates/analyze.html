@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Анализ видео - VideoAnalyzer{% endblock %}
+
+{% block content %}
+<div class="analyze-container">
+    <div class="analyze-card">
+        <h2>Анализ видео</h2>
+        
+        <div class="analyze-form-section">
+            <h3>Введите ссылку на YouTube видео</h3>
+            <form id="analyzeForm" class="analyze-form">
+                <div class="form-group">
+                    <input type="url" id="video_url" name="video_url" 
+                           placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Проанализировать</button>
+            </form>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Анализируем видео... Это может занять несколько секунд.</p>
+        </div>
+        
+        <div id="results" class="results-section" style="display: none;">
+            <h3>Результаты анализа</h3>
+            
+            <div id="videoInfo" class="video-info"></div>
+            <div id="analysisResult" class="analysis-result"></div>
+        </div>
+        
+        <div id="error" class="error-message" style="display: none;"></div>
+    </div>
+</div>
+
+<script>
+document.getElementById('analyzeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const videoUrl = document.getElementById('video_url').value;
+    const loadingElement = document.getElementById('loading');
+    const resultsElement = document.getElementById('results');
+    const errorElement = document.getElementById('error');
+    
+    resultsElement.style.display = 'none';
+    errorElement.style.display = 'none';
+    loadingElement.style.display = 'block';
+    
+    try {
+        const preferencesResponse = await fetch('/users/{{ current_user.id }}/preferences');
+        if (!preferencesResponse.ok) {
+            throw new Error('Не удалось загрузить предпочтения пользователя');
+        }
+        
+        const preferences = await preferencesResponse.json();
+        
+        const response = await fetch('/analyze-video', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                video_url: videoUrl,
+                user_preferences: preferences
+            })
+        });
+        
+        const result = await response.json();
+        
+        loadingElement.style.display = 'none';
+        
+        if (response.ok) {
+            displayResults(result);
+        } else {
+            errorElement.style.display = 'block';
+            errorElement.innerHTML = '<div class="error">Ошибка: ' + result.detail + '</div>';
+        }
+    } catch (error) {
+        loadingElement.style.display = 'none';
+        errorElement.style.display = 'block';
+        errorElement.innerHTML = '<div class="error">Ошибка: ' + error.message + '</div>';
+    }
+});
+
+function displayResults(result) {
+    const videoInfoElement = document.getElementById('videoInfo');
+    const analysisResultElement = document.getElementById('analysisResult');
+    const resultsElement = document.getElementById('results');
+    
+    videoInfoElement.innerHTML = `
+        <div class="video-card">
+            <h4>${result.video_info.title}</h4>
+            <p><strong>Автор:</strong> ${result.video_info.uploader}</p>
+            <p><strong>Длительность:</strong> ${Math.floor(result.video_info.duration / 60)}:${(result.video_info.duration % 60).toString().padStart(2, '0')}</p>
+            <p><strong>Описание:</strong> ${result.video_info.description.substring(0, 200)}...</p>
+        </div>
+    `;
+    
+    const analysis = result.analysis;
+    const suitabilityClass = analysis.is_suitable ? 'suitable' : 'not-suitable';
+    
+    analysisResultElement.innerHTML = `
+        <div class="analysis-card ${suitabilityClass}">
+            <div class="suitability-badge">
+                ${analysis.is_suitable ? '✅ Подходит' : '❌ Не подходит'}
+            </div>
+            <p><strong>Оценка соответствия:</strong> ${analysis.match_score}%</p>
+            <p><strong>Уверенность:</strong> ${Math.round(analysis.confidence * 100)}%</p>
+            <div class="analysis-text">
+                <strong>Анализ:</strong>
+                <p>${analysis.analysis}</p>
+            </div>
+            <div class="reasons">
+                <strong>Причины:</strong>
+                <ul>
+                    ${analysis.reasons.map(reason => `<li>${reason}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    resultsElement.style.display = 'block';
+}
+</script>
+{% endblock %}

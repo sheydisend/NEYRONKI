@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - VideoAnalyzer{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>Добро пожаловать в VideoAnalyzer</h1>
+        <p class="hero-description">
+            Анализируйте видео с YouTube на соответствие вашим предпочтениям с помощью AI
+        </p>
+        
+        {% if not current_user %}
+        <div class="hero-actions">
+            <a href="{{ url_for('register_page') }}" class="btn btn-primary">Начать сейчас</a>
+            <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Войти</a>
+        </div>
+        {% else %}
+        <div class="hero-actions">
+            <a href="{{ url_for('analyze_video_page') }}" class="btn btn-primary">Проанализировать видео</a>
+            <a href="{{ url_for('get_preferences_page', user_id=current_user.id) }}" class="btn btn-secondary">Мои предпочтения</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>📊 Анализ контента</h3>
+            <p>AI анализирует видео и определяет его соответствие вашим предпочтениям</p>
+        </div>
+        <div class="feature-card">
+            <h3>⚙️ Персональные настройки</h3>
+            <p>Настройте категории, длительность и другие параметры под свои интересы</p>
+        </div>
+        <div class="feature-card">
+            <h3>🚀 Быстрый анализ</h3>
+            <p>Получайте результаты анализа за несколько секунд</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

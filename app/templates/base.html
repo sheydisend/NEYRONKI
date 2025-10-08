@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Video Preferences App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-logo">VideoAnalyzer</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}">Главная</a>
+                {% if current_user %}
+                    <a href="{{ url_for('analyze_video_page') }}">Анализ видео</a>
+                    <a href="{{ url_for('get_preferences_page', user_id=current_user.id) }}">Мои предпочтения</a>
+                    <span>Привет, {{ current_user.username }}!</span>
+                    <a href="#" onclick="logout()">Выйти</a>
+                {% else %}
+                    <a href="{{ url_for('login_page') }}">Вход</a>
+                    <a href="{{ url_for('register_page') }}">Регистрация</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2025 VideoAnalyzer. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', path='js/main.js') }}"></script>
+    <script>
+    async function logout() {
+        try {
+            const response = await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (response.ok) {
+                window.location.href = '/';
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+    </script>
+</body>
+</html>
